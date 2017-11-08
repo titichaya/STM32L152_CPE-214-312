@@ -17,7 +17,7 @@ Library Manager: ArmAr.exe V5.06 update 5 (build 528)
 Hex Converter:   FromElf.exe V5.06 update 5 (build 528)
 CPU DLL:         SARMCM3.DLL V5.24.1
 Dialog DLL:      DCM.DLL V1.16.0.0
-Target DLL:      UL2CM3.DLL V1.160.3.0
+Target DLL:      STLink\ST-LINKIII-KEIL_SWO.dll V3.0.1.0
 Dialog DLL:      TCM.DLL V1.32.0.0
  
 <h2>Project:</h2>
@@ -26,19 +26,15 @@ Project File Date:  11/06/2017
 
 <h2>Output:</h2>
 *** Using Compiler 'V5.06 update 5 (build 528)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
-Rebuild target 'Workspace'
-assembling startup_stm32l152xb.s...
-compiling system_stm32l1xx.c...
-compiling stm32l1xx_ll_gpio.c...
-compiling stm32l1xx_ll_pwr.c...
-compiling stm32l1xx_it.c...
-compiling stm32l1xx_ll_rcc.c...
-compiling stm32l1xx_ll_utils.c...
+Build target 'Workspace'
 compiling main.c...
+..\src\main.c(57): warning:  #177-D: variable "GPIO_InitStruct"  was declared but never referenced
+  	LL_GPIO_InitTypeDef GPIO_InitStruct;
+..\src\main.c: 1 warning, 0 errors
 linking...
-Program Size: Code=1260 RO-data=276 RW-data=4 ZI-data=1636  
+Program Size: Code=940 RO-data=276 RW-data=4 ZI-data=1636  
 FromELF: creating hex file...
-".\Objects\STM32L152-TNI.axf" - 0 Error(s), 0 Warning(s).
+".\Objects\STM32L152-TNI.axf" - 0 Error(s), 1 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -52,7 +48,7 @@ Package Vendor: Keil
   C:\Keil_v5\ARM\PACK\Keil\STM32L1xx_DFP\1.2.0\Device\Include
 
 <h2>Collection of Component Files used:</h2>
-Build Time Elapsed:  00:00:02
+Build Time Elapsed:  00:00:00
 </pre>
 </body>
 </html>

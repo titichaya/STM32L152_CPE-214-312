@@ -25,28 +25,60 @@ void GPIO_Config(void);
   */
 int main(void)
 {
+	/*This example demonstrate a configuration of PB6 as 
+	output mode with following method
+	-	Raw Style : This method uses a casted pointer from heximal to specific which address to be modify
+	- Bit Shift : This method require pre-defined address from stm32l1xx.h provided by ST
+	- TNI Style : This method embraces a LL library that using predefined struct for PB6 configuration
+	- LL Style  : This method similar to previous one but using LL function instead of struct*/
+	
   SystemClock_Config();
-	GPIO_Config();
-  
+	//GPIO_Config();
+	
+  	/** Raw Style **/
+	*(uint32_t*)0x4002381C |= (1<<1); //Enable GPIOB Clock via AHBENR
+	*(uint32_t*)0x40020400 |= (1<<12); //Config Output mode via MODER
+	*(uint32_t*)0x40020404 |= ~(1<<6); // Config Ouput Type via OTYPE
+	*(uint32_t*)0x40020408 |= (1<<12); //Config Speed via OSPEEDR
+	*(uint32_t*)0x4002040C |= ~(3<<12); //Config Push pull type via PUPD
+	*(uint32_t*)(0x40020418) |= (1<<6); //Enable Output at PB8 via BSSR
+	
   while (1)
   {
+		//LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
+		//GPIOB->BSRR |= (1<<6);
+		//*(uint32_t*)(0x40020418) |= (1<<6); //Enable Output at PB8 via BSSR
+
   }
 }
 
 void GPIO_Config(void)
 {
-	/** TNI Traditional Way **/
 	LL_GPIO_InitTypeDef GPIO_InitStruct;
-	/*Enable Clock at AHB bus*/
-	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
-	GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
-	GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
-	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-	GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-	GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
-	LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	/** Raw Style **/
+	*(uint32_t*)0x4002381C |= (1<<1); //Enable GPIOB Clock via AHBENR
+	*(uint32_t*)0x40020400 |= (1<<12); //Config Output mode via MODER
+	*(uint32_t*)0x40020404 |= ~(1<<6); // Config Ouput Type via OTYPE
+	*(uint32_t*)0x40020408 |= (1<<12); //Config Speed via OSPEEDR
+	*(uint32_t*)0x4002040C |= ~(3<<12); //Config Push pull type via PUPD
 	
-	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
+	/**Bit Shifting Style **/
+//	RCC->AHBENR |= (1<<1); //Enable GPIOB clock source
+//	
+//	GPIOB->MODER |= (1<<12); //GPIOB pin 6 to output mode
+//	GPIOB->OTYPER |= ~(1<<6); //GPIOB pin 6 to push pull output type
+//	GPIOB->OSPEEDR |= (2<<13); //GPIOB pin 6 to speed high
+//	GPIOB->PUPDR |= ~(3<<13); //GPIOB pin 6 to no pull
+	
+	/** TNI Traditional Way **/
+	/*Enable Clock at AHB bus*/
+//	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+//	GPIO_InitStruct.Mode = LL_GPIO_MODE_OUTPUT;
+//	GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
+//	GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
+//	GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+//	GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_HIGH;
+//	LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 	
 	/** LL Style Pin Config **/
 //	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
@@ -55,13 +87,6 @@ void GPIO_Config(void)
 //  LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_6, LL_GPIO_SPEED_FREQ_LOW);
 //  LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_6, LL_GPIO_PULL_NO);
 	
-	/**Bit Shifting Style **/
-//	RCC->AHBENR |= (1<<1); //Enable GPIOB clock source
-//	
-//	GPIOB->MODER |= ~(3<<12); //GPIOB pin 6 to output mode
-//	GPIOB->OTYPER |= ~(1<<6); //GPIOB pin 6 to push pull output type
-//	GPIOB->OSPEEDR |= (2<<13); //GPIOB pin 6 to speed high
-//	GPIOB->PUPDR |= ~(3<<13); //GPIOB pin 6 to no pull
 }
 
 /* ==============   BOARD SPECIFIC CONFIGURATION CODE BEGIN    ============== */
