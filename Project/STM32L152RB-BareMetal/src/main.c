@@ -14,26 +14,23 @@ int main()
 	//Config PB6/PB7 speed to be high speed
 	GPIOB->OSPEEDR |= (0x0000C0000);
 	
-	//Config PA0 as INPUT
-	GPIOA->MODER &= ~(0xFFFFFFFF);
-	//Config PA0 as push pull type
-	GPIOB->OTYPER &= ~(0xFFFF);
-	//Config PA0 push pull type to no-pull (not using internal pullup-down circuit)
-	GPIOB->PUPDR &= ~(0xFFFFFFFF);
-	//Config PA0 speed to be high speed
-	GPIOB->OSPEEDR |= (0x0000C0000);
+//	//Config PA0 as INPUT
+//	GPIOA->MODER &= ~(0xFFFFFFFF);
+//	//Config PA0 as push pull type
+//	GPIOB->OTYPER &= ~(0xFFFF);
+//	//Config PA0 push pull type to no-pull (not using internal pullup-down circuit)
+//	GPIOB->PUPDR &= ~(0xFFFFFFFF);
+//	//Config PA0 speed to be high speed
+//	GPIOB->OSPEEDR |= (0x0000C0000);
 	
 	//Config EXTI
 	
 	while(1){
-			if((GPIOA->IDR & (0x1)) == 1)
-			{ 
+
 				GPIOB->ODR |= (0x00C0);
-			}
-			else
-			{
+
 				GPIOB->ODR &= ~(0xFFFF);
-			}
+	
 	}
 }
 
