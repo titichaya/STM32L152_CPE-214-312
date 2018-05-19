@@ -32,7 +32,6 @@ int main(void)
 
   SystemClock_Config();
 	LCD_GLASS_Init();
-	LCD_GLASS_DisplayString((uint8_t*) "1+1=2");
 
   while (1)
   {
@@ -47,11 +46,6 @@ void GPIO_Config(void)
 {
 	LL_GPIO_InitTypeDef GPIO_InitStruct;
 	/** Raw Style **/
-	*(uint32_t*)0x4002381C |= (1<<1); //Enable GPIOB Clock via AHBENR
-	*(uint32_t*)0x40020400 |= (1<<12); //Config Output mode via MODER
-	*(uint32_t*)0x40020404 |= ~(1<<6); // Config Ouput Type via OTYPE
-	*(uint32_t*)0x40020408 |= (1<<12); //Config Speed via OSPEEDR
-	*(uint32_t*)0x4002040C |= ~(3<<12); //Config Push pull type via PUPD
 	
 	/**Bit Shifting Style **/
 //	RCC->AHBENR |= (1<<1); //Enable GPIOB clock source

@@ -395,6 +395,11 @@
           <GroupName>Drivers</GroupName>
           <Files>
             <File>
+              <FileName>stm32l1xx_ll_lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\stm32l1xx_ll_lcd.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32l1xx_ll_gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\STM32L1xx_HAL_Driver\Src\stm32l1xx_ll_gpio.c</FilePath>
@@ -482,11 +487,6 @@
                   </Cads>
                 </FileArmAds>
               </FileOption>
-            </File>
-            <File>
-              <FileName>stm32l1xx_ll_lcd.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\src\stm32l1xx_ll_lcd.c</FilePath>
             </File>
           </Files>
         </Group>

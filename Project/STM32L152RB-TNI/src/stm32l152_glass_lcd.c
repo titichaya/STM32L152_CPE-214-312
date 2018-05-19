@@ -661,9 +661,9 @@ void LCD_GLASS_ScrollSentence(uint8_t* ptr, uint16_t nScroll, uint16_t ScrollSpe
       *(str+3) =* (ptr1+((nbrchar+4)%sizestr));
       *(str+4) =* (ptr1+((nbrchar+5)%sizestr));
       *(str+5) =* (ptr1+((nbrchar+6)%sizestr));
-      LCD_GLASS_Clear();
-      LCD_GLASS_DisplayString(str);
       
+      LCD_GLASS_DisplayString(str);
+			LCD_GLASS_Clear();
       LL_mDelay(ScrollSpeed);
     }  
   }
@@ -735,6 +735,52 @@ static void LCD_MspInit(void)
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_LCD);
 }
 
+
+/**
+  @verbatim
+================================================================================
+                              GLASS LCD MAPPING
+================================================================================
+LCD allows to display informations on six 14-segment digits and 4 bars:
+
+  1       2       3       4       5       6
+-----   -----   -----   -----   -----   -----   
+|\|/| o |\|/| o |\|/| o |\|/| o |\|/|   |\|/|   BAR3
+-- --   -- --   -- --   -- --   -- --   -- --   BAR2
+|/|\| o |/|\| o |/|\| o |/|\| o |/|\|   |/|\|   BAR1
+----- * ----- * ----- * ----- * -----   -----   BAR0
+
+LCD segment mapping:
+--------------------
+  -----A-----        _ 
+  |\   |   /|   COL |_|
+  F H  J  K B          
+  |  \ | /  |        _ 
+  --G-- --M--   COL |_|
+  |  / | \  |          
+  E Q  P  N C          
+  |/   |   \|        _ 
+  -----D-----   DP  |_|
+
+ An LCD character coding is based on the following matrix:
+COM           0   1   2     3
+SEG(n)      { E , D , P ,   N   }
+SEG(n+1)    { M , C , COL , DP  }
+SEG(23-n-1) { B , A , K ,   J   }
+SEG(23-n)   { G , F , Q ,   H   }
+with n positif odd number.
+
+ The character 'A' for example is:
+  -------------------------------
+LSB   { 1 , 0 , 0 , 0   }
+      { 1 , 1 , 0 , 0   }
+      { 1 , 1 , 0 , 0   }
+MSB   { 1 , 1 , 0 , 0   }
+      -------------------
+  'A' =  F    E   0   0 hexa
+
+  @endverbatim
+*/
 /**
   * @brief  Converts an ascii char to the a LCD digit.
   * @param  Char: a char to display.
@@ -752,52 +798,7 @@ static void Convert(uint8_t* Char, Point_Typedef Point, DoublePoint_Typedef Doub
   
   switch (*Char)
     {
-    case ' ' :
-      ch = 0x00;
-      break;
-
-    case '*':
-      ch = C_STAR;
-      break;
-
-    case '(' :
-      ch = C_OPENPARMAP;
-      break;
-
-    case ')' :
-      ch = C_CLOSEPARMAP;
-      break;
-      
-    case 'm' :
-      ch = C_MMAP;
-      break;
-    
-    case 'n' :
-      ch = C_NMAP;
-      break;
-
-    case 'µ' :
-      ch = C_UMAP;
-      break;
-
-    case '-' :
-      ch = C_MINUS;
-      break;
-
-    case '/' :
-      ch = C_SLATCH;
-      break;  
-      
-    case '°' :
-      ch = C_PERCENT_1;
-      break;  
-    case '%' :
-      ch = C_PERCENT_2; 
-      break;
-    case 255 :
-      ch = C_FULL;
-      break ;
-    
+		break;
     case '0':
     case '1':
     case '2':
