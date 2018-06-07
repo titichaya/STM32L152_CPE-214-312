@@ -6,6 +6,10 @@
 #include "stm32l1xx_ll_rcc.h"
 #include "stm32l1xx_ll_pwr.h"
 #include "stm32l1xx_ll_gpio.h"
+#include "stm32l1xx_ll_lcd.h"
+
+#include "stm32l152_glass_lcd.h"
+
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -25,24 +29,10 @@ void GPIO_Config(void);
   */
 int main(void)
 {
-	/*This example demonstrate a configuration of PB6 as 
-	output mode with following method
-	-	Raw Style : This method uses a casted pointer from heximal to specific which address to be modify
-	- Bit Shift : This method require pre-defined address from stm32l1xx.h provided by ST
-	- TNI Style : This method embraces a LL library that using predefined struct for PB6 configuration
-	- LL Style  : This method similar to previous one but using LL function instead of struct*/
-	
+
   SystemClock_Config();
-	//GPIO_Config();
-	
-  	/** Raw Style **/
-	*(uint32_t*)0x4002381C |= (1<<1); //Enable GPIOB Clock via AHBENR
-	*(uint32_t*)0x40020400 |= (1<<12); //Config Output mode via MODER
-	*(uint32_t*)0x40020404 |= ~(1<<6); // Config Ouput Type via OTYPE
-	*(uint32_t*)0x40020408 |= (1<<12); //Config Speed via OSPEEDR
-	*(uint32_t*)0x4002040C |= ~(3<<12); //Config Push pull type via PUPD
-	*(uint32_t*)(0x40020418) |= (1<<6); //Enable Output at PB8 via BSSR
-	
+	LCD_GLASS_Init();
+
   while (1)
   {
 		//LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
@@ -56,11 +46,6 @@ void GPIO_Config(void)
 {
 	LL_GPIO_InitTypeDef GPIO_InitStruct;
 	/** Raw Style **/
-	*(uint32_t*)0x4002381C |= (1<<1); //Enable GPIOB Clock via AHBENR
-	*(uint32_t*)0x40020400 |= (1<<12); //Config Output mode via MODER
-	*(uint32_t*)0x40020404 |= ~(1<<6); // Config Ouput Type via OTYPE
-	*(uint32_t*)0x40020408 |= (1<<12); //Config Speed via OSPEEDR
-	*(uint32_t*)0x4002040C |= ~(3<<12); //Config Push pull type via PUPD
 	
 	/**Bit Shifting Style **/
 //	RCC->AHBENR |= (1<<1); //Enable GPIOB clock source

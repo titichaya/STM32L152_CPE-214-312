@@ -516,19 +516,19 @@ ARM Macro Assembler    Page 8
               00000200 
               00000000 
 Command Line: --debug --xref --diag_suppress=9931 --cpu=Cortex-M3 --apcs=interw
-ork --depend=.\objects\startup_stm32l152xb.d -o.\objects\startup_stm32l152xb.o 
--IC:\Users\Goragod\Desktop\Workspace\STM32L152_CPE-214-312\Project\STM32L152RB-
+ork --depend=.\startup_stm32l152xb.d -o.\startup_stm32l152xb.o -IC:\Users\Gorag
+od\Desktop\Workspace\STM32L152_CPE-214-312\Project\STM32L152RB-BareMetal\MDK-AR
 
 
 
 ARM Macro Assembler    Page 9 
 
 
-TNI\MDK-ARM\RTE -IC:\Keil_v5\ARM\PACK\Keil\STM32L1xx_DFP\1.2.0\Device\Include -
-IC:\Keil_v5\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --predefine="__UVISIO
-N_VERSION SETA 520" --predefine="STM32L152xB SETA 1" --list=.\listings\startup_
-stm32l152xb.lst ..\..\..\Drivers\CMSIS\Device\ST\STM32L1xx\Source\Templates\arm
-\startup_stm32l152xb.s
+M\RTE -IC:\Keil_v5\ARM\PACK\Keil\STM32L1xx_DFP\1.2.0\Device\Include -IC:\Keil_v
+5\ARM\CMSIS\Include --predefine="__EVAL SETA 1" --predefine="__UVISION_VERSION 
+SETA 520" --predefine="STM32L151xBA SETA 1" --list=.\startup_stm32l152xb.lst ..
+\..\..\Drivers\CMSIS\Device\ST\STM32L1xx\Source\Templates\arm\startup_stm32l152
+xb.s
 
 
 

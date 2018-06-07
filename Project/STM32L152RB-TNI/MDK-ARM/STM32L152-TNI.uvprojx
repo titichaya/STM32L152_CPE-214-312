@@ -10,8 +10,8 @@
       <TargetName>Workspace</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
+      <pArmCC>5060528::V5.06 update 5 (build 528)::ARMCC</pArmCC>
       <pCCUsed>5060528::V5.06 update 5 (build 528)::ARMCC</pCCUsed>
-      <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32L152RB</Device>
@@ -331,12 +331,11 @@
             <vShortWch>1</vShortWch>
             <v6Lto>0</v6Lto>
             <v6WtE>0</v6WtE>
-            <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls></MiscControls>
-              <Define>USE_FULL_LL_DRIVER, STM32L152XB</Define>
+              <Define>USE_FULL_LL_DRIVER,STM32L152xB</Define>
               <Undefine></Undefine>
-              <IncludePath>..\inc;..\..\..\Drivers\STM32L1xx_HAL_Driver\Inc;..\..\..\Drivers\CMSIS\Device\ST\STM32L1xx\Include;..\..\..\Drivers\CMSIS\Include</IncludePath>
+              <IncludePath>..\inc;..\..\..\Drivers\STM32L1xx_HAL_Driver\Inc;..\..\..\Drivers\CMSIS\Device\ST\STM32L1xx\Include;..\..\..\Drivers\CMSIS\Include;..\..\..\Drivers\BSP\STM32L152C-Discovery</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -396,6 +395,11 @@
           <GroupName>Drivers</GroupName>
           <Files>
             <File>
+              <FileName>stm32l1xx_ll_lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\stm32l1xx_ll_lcd.c</FilePath>
+            </File>
+            <File>
               <FileName>stm32l1xx_ll_gpio.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\STM32L1xx_HAL_Driver\Src\stm32l1xx_ll_gpio.c</FilePath>
@@ -430,16 +434,64 @@
               <FileType>1</FileType>
               <FilePath>..\src\main.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32l152_glass_lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\src\stm32l152_glass_lcd.c</FilePath>
+              <FileOption>
+                <CommonProperty>
+                  <UseCPPCompiler>2</UseCPPCompiler>
+                  <RVCTCodeConst>0</RVCTCodeConst>
+                  <RVCTZI>0</RVCTZI>
+                  <RVCTOtherData>0</RVCTOtherData>
+                  <ModuleSelection>0</ModuleSelection>
+                  <IncludeInBuild>1</IncludeInBuild>
+                  <AlwaysBuild>2</AlwaysBuild>
+                  <GenerateAssemblyFile>2</GenerateAssemblyFile>
+                  <AssembleAssemblyFile>2</AssembleAssemblyFile>
+                  <PublicsOnly>2</PublicsOnly>
+                  <StopOnExitCode>11</StopOnExitCode>
+                  <CustomArgument></CustomArgument>
+                  <IncludeLibraryModules></IncludeLibraryModules>
+                  <ComprImg>1</ComprImg>
+                </CommonProperty>
+                <FileArmAds>
+                  <Cads>
+                    <interw>2</interw>
+                    <Optim>0</Optim>
+                    <oTime>2</oTime>
+                    <SplitLS>2</SplitLS>
+                    <OneElfS>2</OneElfS>
+                    <Strict>2</Strict>
+                    <EnumInt>2</EnumInt>
+                    <PlainCh>2</PlainCh>
+                    <Ropi>2</Ropi>
+                    <Rwpi>2</Rwpi>
+                    <wLevel>0</wLevel>
+                    <uThumb>2</uThumb>
+                    <uSurpInc>2</uSurpInc>
+                    <uC99>2</uC99>
+                    <useXO>2</useXO>
+                    <v6Lang>0</v6Lang>
+                    <v6LangP>0</v6LangP>
+                    <vShortEn>2</vShortEn>
+                    <vShortWch>2</vShortWch>
+                    <v6Lto>0</v6Lto>
+                    <v6WtE>0</v6WtE>
+                    <VariousControls>
+                      <MiscControls></MiscControls>
+                      <Define></Define>
+                      <Undefine></Undefine>
+                      <IncludePath></IncludePath>
+                    </VariousControls>
+                  </Cads>
+                </FileArmAds>
+              </FileOption>
+            </File>
           </Files>
         </Group>
       </Groups>
     </Target>
   </Targets>
-
-  <RTE>
-    <apis/>
-    <components/>
-    <files/>
-  </RTE>
 
 </Project>
