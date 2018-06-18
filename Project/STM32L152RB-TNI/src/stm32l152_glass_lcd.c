@@ -199,10 +199,10 @@ void LCD_GLASS_Contrast(uint32_t Contrast)
   * @brief Display one or several bar on LCD frame buffer 
   * @param BarId: specifies the LCD GLASS Bar to display
   *     This parameter can be one of the following values:
-  *     @arg BAR0: LCD GLASS Bar 0
-  *     @arg BAR0: LCD GLASS Bar 1
-  *     @arg BAR0: LCD GLASS Bar 2
-  *     @arg BAR0: LCD GLASS Bar 3
+  *     @arg LCD_BAR_0: LCD GLASS Bar 0
+  *     @arg LCD_BAR_1: LCD GLASS Bar 1
+  *     @arg LCD_BAR_2: LCD GLASS Bar 2
+  *     @arg LCD_BAR_3: LCD GLASS Bar 3
   * @retval None
   */
 void LCD_GLASS_DisplayBar(uint32_t BarId)
@@ -663,8 +663,8 @@ void LCD_GLASS_ScrollSentence(uint8_t* ptr, uint16_t nScroll, uint16_t ScrollSpe
       *(str+5) =* (ptr1+((nbrchar+6)%sizestr));
       
       LCD_GLASS_DisplayString(str);
-			LCD_GLASS_Clear();
       LL_mDelay(ScrollSpeed);
+			LCD_GLASS_Clear();
     }  
   }
 }
@@ -798,7 +798,9 @@ static void Convert(uint8_t* Char, Point_Typedef Point, DoublePoint_Typedef Doub
   
   switch (*Char)
     {
-		break;
+		case '^':
+			ch = 0x0181;
+			break;
     case '0':
     case '1':
     case '2':

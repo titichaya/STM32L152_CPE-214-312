@@ -7,39 +7,24 @@
 #include "stm32l1xx_ll_pwr.h"
 #include "stm32l1xx_ll_gpio.h"
 #include "stm32l1xx_ll_lcd.h"
-
 #include "stm32l152_glass_lcd.h"
+/* sprintf function access */
+#include "stdio.h"
 
-
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
-/* Private macro -------------------------------------------------------------*/
-/* Private variables ---------------------------------------------------------*/
-/* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 void GPIO_Config(void);
 
+const char disp_str[] = "BAR"; 
 
-/* Private functions ---------------------------------------------------------*/
-
-/**
-  * @brief  Main program
-  * @param  None
-  * @retval None
-  */
 int main(void)
 {
-
   SystemClock_Config();
 	LCD_GLASS_Init();
-
-  while (1)
-  {
-		//LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
-		//GPIOB->BSRR |= (1<<6);
-		//*(uint32_t*)(0x40020418) |= (1<<6); //Enable Output at PB8 via BSSR
-
-  }
+	
+	LCD_GLASS_DisplayString((uint8_t*) disp_str);
+	LCD_GLASS_DisplayBar(LCD_BAR_3);
+	LCD_GLASS_DisplayBar(LCD_BAR_0);
+  while (1);
 }
 
 void GPIO_Config(void)
@@ -71,6 +56,8 @@ void GPIO_Config(void)
 //  LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_6, LL_GPIO_OUTPUT_PUSHPULL);
 //  LL_GPIO_SetPinSpeed(GPIOB, LL_GPIO_PIN_6, LL_GPIO_SPEED_FREQ_LOW);
 //  LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_6, LL_GPIO_PULL_NO);
+
+	
 	
 }
 

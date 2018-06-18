@@ -15,3 +15,4 @@
 .\objects\main.o: ..\..\..\Drivers\STM32L1xx_HAL_Driver\Inc\stm32l1xx_ll_gpio.h
 .\objects\main.o: ..\inc\stm32l1xx_ll_lcd.h
 .\objects\main.o: ..\inc\stm32l152_glass_lcd.h
+.\objects\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
