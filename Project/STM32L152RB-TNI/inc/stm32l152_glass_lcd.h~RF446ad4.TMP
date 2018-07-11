@@ -8,6 +8,7 @@
 
 #ifndef __STM32L152_GLASS_LCD_H__
 #define __STM32L152_GLASS_LCD_H__
+#define STM32L152xB
 #include "stm32l1xx.h"
 
 typedef enum
