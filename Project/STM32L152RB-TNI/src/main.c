@@ -30,6 +30,7 @@ int main(void)
 {
   SystemClock_Config();
 	TIMInputCapture_Config();
+//	Button_Config();
   while (1)
 	{
 		counter = LL_TIM_GetCounter(TIM2);
@@ -41,7 +42,7 @@ void TIMInputCapture_Config(void)
 {
 	LL_GPIO_InitTypeDef GPIO_InitStructure;
 	LL_TIM_IC_InitTypeDef TIM_IC_InitStructure;
-	
+	LL_TIM_InitTypeDef TIM_InitStructure;
   /* Enable the peripheral clock of GPIOs */
   LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
 
@@ -64,7 +65,13 @@ void TIMInputCapture_Config(void)
   /******************************/
   /* Enable the timer peripheral clock */
   LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-  
+ 
+	TIM_InitStructure.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+	TIM_InitStructure.CounterMode = LL_TIM_COUNTERMODE_UP;
+	TIM_InitStructure.Prescaler = 3200; //Prescale TIM2 clock to 10kHz
+	TIM_InitStructure.Autoreload = 10000-1; //Create counting value for 1 ms
+	LL_TIM_Init(TIM2,&TIM_InitStructure);
+
   /************************************/
   /* Input capture mode configuration */
   /************************************/
@@ -90,7 +97,27 @@ void TIM2_IRQHandler(void)
   /* Check whether update interrupt is pending */
   if(LL_TIM_IsActiveFlag_CC1(TIM2) == 1)
   {
-		uwICValue1 = LL_TIM_IC_GetCaptureCH1(TIM2);
+		LL_TIM_ClearFlag_CC1(TIM2);
+		if(state == 0)
+		{
+			uwICValue1 = LL_TIM_IC_GetCaptureCH1(TIM2);
+			state = 1;
+		}
+		else
+		{
+			uwICValue2 = LL_TIM_IC_GetCaptureCH1(TIM2);
+			/*Pulse computation*/
+			if(uwICValue1 > uwICValue2)
+			{
+				uwDiffCap = uwICValue1 - uwICValue2;
+			}
+			else
+			{
+				uwDiffCap = ((LL_TIM_GetPrescaler(TIM2) - uwICValue1) + uwICValue2) + 1;
+			}
+			state = 0;
+		}
+		LL_TIM_SetCounter(TIM2, 0);
   }
 }
 
@@ -140,14 +167,13 @@ void LED_Config(void)
 //  //LL_TIM_GenerateEvent_UPDATE(TIM2);
 //}
 
-//void Button_Config(void)
-//{
-//	LL_GPIO_InitTypeDef GPIO_InitStructure;
-//	LL_EXTI_InitTypeDef EXTI_InitStructure;
+void Button_Config(void)
+{
+	LL_EXTI_InitTypeDef EXTI_InitStructure;
 
-//	/* Enable the BUTTON Clock */
-//  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-//	
+	/* Enable the BUTTON Clock */
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+	
 //  /* Configure GPIO for BUTTON */
 //	GPIO_InitStructure.Mode = LL_GPIO_MODE_INPUT;
 //	GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
@@ -155,23 +181,23 @@ void LED_Config(void)
 //	GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
 //	GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
 //	LL_GPIO_Init(GPIOA, &GPIO_InitStructure);
-//  
-//  /* Connect External Line to the GPIO*/
-//    /* Enale EXTI Config Access */
-//	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-//	LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
-//    
-//  /* Enable a rising trigger EXTI line 13 Interrupt */
-//  EXTI_InitStructure.Line_0_31 = LL_EXTI_LINE_0;
-//	EXTI_InitStructure.Mode = LL_EXTI_MODE_IT;
-//	EXTI_InitStructure.Trigger = LL_EXTI_TRIGGER_RISING;
-//	EXTI_InitStructure.LineCommand = ENABLE;
-//	LL_EXTI_Init(&EXTI_InitStructure);
-//    
-//  /* Configure NVIC for USER_BUTTON_EXTI_IRQn */
-//  NVIC_EnableIRQ(EXTI0_IRQn); 
-//  NVIC_SetPriority(EXTI0_IRQn,0x03);  
-//}
+  
+  /* Connect External Line to the GPIO*/
+    /* Enale EXTI Config Access */
+	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
+	LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
+    
+  /* Enable a rising trigger EXTI line 13 Interrupt */
+  EXTI_InitStructure.Line_0_31 = LL_EXTI_LINE_0;
+	EXTI_InitStructure.Mode = LL_EXTI_MODE_IT;
+	EXTI_InitStructure.Trigger = LL_EXTI_TRIGGER_RISING;
+	EXTI_InitStructure.LineCommand = ENABLE;
+	LL_EXTI_Init(&EXTI_InitStructure);
+    
+  /* Configure NVIC for USER_BUTTON_EXTI_IRQn */
+  NVIC_EnableIRQ(EXTI0_IRQn); 
+  NVIC_SetPriority(EXTI0_IRQn,0x03);  
+}
 
 /* ==============   BOARD SPECIFIC CONFIGURATION CODE BEGIN    ============== */
 /**
@@ -276,7 +302,7 @@ void EXTI0_IRQHandler(void)
 			}
 			else
 			{
-				uwDiffCap = uwICValue2 - uwICValue1;
+				uwDiffCap = ((LL_TIM_GetPrescaler(TIM2) - uwICValue1) + uwICValue2) + 1;
 			}
 			state = 0;
 		}
