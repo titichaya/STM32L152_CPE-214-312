@@ -9,195 +9,184 @@
 #include "stm32l1xx_ll_tim.h"
 #include "stm32l1xx_ll_lcd.h"
 #include "stm32l1xx_ll_exti.h"
+#include "stm32l1xx_ll_usart.h"
 
 #include "stm32l152_glass_lcd.h"
 #include "stdio.h"
 
+#define C_NOTE					15288.
+#define Db_NOTE					13550
+#define D_NOTE					13619
+#define Eb_NOTE					12855.
+#define E_NOTE					12134
+#define F_NOTE					11456
+#define Gb_NOTE					10809
+#define G_NOTE					10203
+#define Ab_NOTE					9630
+#define A_NOTE					9089
+#define Bb_NOTE					8579
+#define B_NOTE					8098
+#define C_HIGH_NOTE			7643
+#define MUTE_NOTE				0
+
+const uint32_t musicSheet[] = {E_NOTE, D_NOTE, C_NOTE, D_NOTE, E_NOTE, E_NOTE, E_NOTE, D_NOTE, D_NOTE, D_NOTE, D_NOTE, G_NOTE, G_NOTE,
+															 E_NOTE, D_NOTE, C_NOTE, D_NOTE, E_NOTE, E_NOTE, E_NOTE, D_NOTE, D_NOTE, D_NOTE, E_NOTE, D_NOTE, C_NOTE};
+const uint8_t tempo[] = {1,1,1,1,1,1,2,1,1,1,2,1,4,1,1,1,1,1,1,2,1,1,1,1,4};
+uint8_t idx_conductor = 0;
+
+uint32_t song[sizeof(musicSheet)/sizeof(uint32_t) * 2];
+uint8_t  rythm[sizeof(tempo)/sizeof(uint8_t) * 2]; 
+
 void SystemClock_Config(void);
 
-void TIMInputCapture_Config(void);
-
-/*Not use*/
-void TIMBase_Config(void);
-void LED_Config(void);
-void Button_Config(void);
-
-volatile uint32_t uwICValue1, uwICValue2;
-volatile uint32_t uwDiffCap = 0;
-uint32_t counter;
-
-int main(void)
-{
-  SystemClock_Config();
-	TIMInputCapture_Config();
-//	Button_Config();
-  while (1)
-	{
-		counter = LL_TIM_GetCounter(TIM2);
-	}
-}
-
-
-void TIMInputCapture_Config(void)
-{
-	LL_GPIO_InitTypeDef GPIO_InitStructure;
-	LL_TIM_IC_InitTypeDef TIM_IC_InitStructure;
-	LL_TIM_InitTypeDef TIM_InitStructure;
-  /* Enable the peripheral clock of GPIOs */
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-
-  /* GPIO TIM1_CH1 configuration */
-	GPIO_InitStructure.Mode = LL_GPIO_MODE_ALTERNATE;
-	GPIO_InitStructure.Alternate = LL_GPIO_AF_1;
-	GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
-	GPIO_InitStructure.Pull = LL_GPIO_PULL_DOWN;
-	GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-	LL_GPIO_Init(GPIOA, &	GPIO_InitStructure);
 	
-  /***************************************************************/
-  /* Configure the NVIC to handle TIM3 capture/compare interrupt */
-  /***************************************************************/
-  NVIC_SetPriority(TIM2_IRQn, 0);
-  NVIC_EnableIRQ(TIM2_IRQn);
-  
-  /******************************/
-  /* Peripheral clocks enabling */
-  /******************************/
-  /* Enable the timer peripheral clock */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
- 
-	TIM_InitStructure.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-	TIM_InitStructure.CounterMode = LL_TIM_COUNTERMODE_UP;
-	TIM_InitStructure.Prescaler = 3200; //Prescale TIM2 clock to 10kHz
-	TIM_InitStructure.Autoreload = 10000-1; //Create counting value for 1 ms
-	LL_TIM_Init(TIM2,&TIM_InitStructure);
-
-  /************************************/
-  /* Input capture mode configuration */
-  /************************************/
-	TIM_IC_InitStructure.ICActiveInput = LL_TIM_ACTIVEINPUT_DIRECTTI;
-	TIM_IC_InitStructure.ICFilter = LL_TIM_IC_FILTER_FDIV1;
-	TIM_IC_InitStructure.ICPrescaler = LL_TIM_ICPSC_DIV1;
-	TIM_IC_InitStructure.ICPolarity = LL_TIM_IC_POLARITY_FALLING;
-	LL_TIM_IC_Init(TIM2, LL_TIM_CHANNEL_CH1, &TIM_IC_InitStructure);
-	 
-  /* Enable the capture/compare interrupt for channel 1 */
-  LL_TIM_EnableIT_CC1(TIM2);
- 
-  /* Enable output channel 1 */
-  LL_TIM_CC_EnableChannel(TIM2, LL_TIM_CHANNEL_CH1);
-    
-  /* Enable counter */
-  LL_TIM_EnableCounter(TIM2);
-}
-
-void TIM2_IRQHandler(void)
+void CreateSong()
 {
-	static uint8_t state = 0;
-  /* Check whether update interrupt is pending */
-  if(LL_TIM_IsActiveFlag_CC1(TIM2) == 1)
-  {
-		LL_TIM_ClearFlag_CC1(TIM2);
-		if(state == 0)
-		{
-			uwICValue1 = LL_TIM_IC_GetCaptureCH1(TIM2);
-			state = 1;
-		}
-		else
-		{
-			uwICValue2 = LL_TIM_IC_GetCaptureCH1(TIM2);
-			/*Pulse computation*/
-			if(uwICValue1 > uwICValue2)
-			{
-				uwDiffCap = uwICValue1 - uwICValue2;
-			}
-			else
-			{
-				uwDiffCap = ((LL_TIM_GetPrescaler(TIM2) - uwICValue1) + uwICValue2) + 1;
-			}
-			state = 0;
-		}
-		LL_TIM_SetCounter(TIM2, 0);
-  }
+	uint8_t i;
+	
+	for(i = 0; i < sizeof(song)/sizeof(uint32_t); ++i)
+	{
+		song[i] = musicSheet[i];
+		rythm[i] = tempo[i] * 4;
+		song[i + 1] = MUTE_NOTE;
+		rythm[i + 1] = 1;
+	}
+}	
+uint32_t ARR_TempoCal(uint8_t beat)
+{
+	/*return arr value according to desire tempo (beat per min or BPM thus 60/beat = BPS or beat per sec)*/
+	return (SystemCoreClock/(32000*(beat/60)));
+}
+void TIMBase_Config(uint8_t tempo)
+{
+	LL_TIM_InitTypeDef tim_initstruct;
+	
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
+	
+	tim_initstruct.Autoreload = ARR_TempoCal(tempo);
+	tim_initstruct.Prescaler = 32000;
+	tim_initstruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+	tim_initstruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+	LL_TIM_Init(TIM2, &tim_initstruct);
+	
+//	LL_TIM_EnableIT_UPDATE(TIM2);
+//	
+//	NVIC_SetPriority(TIM2_IRQn, 0);
+//	NVIC_EnableIRQ(TIM2_IRQn);
+//  /* Enable counter */
+  LL_TIM_EnableCounter(TIM2);
+//  
+//  /* Force update generation */
+//  LL_TIM_GenerateEvent_UPDATE(TIM2);
 }
 
 void LED_Config(void)
 {
-	LL_GPIO_InitTypeDef GPIO_InitStructure;
+	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_6, LL_GPIO_MODE_OUTPUT);
+	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_6, LL_GPIO_OUTPUT_PUSHPULL);
+	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_6, LL_GPIO_PULL_NO);
 	
-	/*Enable LED PB6 PB7 Clock*/
+	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
+}
+
+void TIMOC_GPIO_Config()
+{
+	LL_GPIO_InitTypeDef gpio_initstruct;
 	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
 	
-	/*Config PB6 PB7 as OUTPUT mode*/
-	GPIO_InitStructure.Mode = LL_GPIO_MODE_OUTPUT;
-	GPIO_InitStructure.Pin = LL_GPIO_PIN_6 | LL_GPIO_PIN_7;
-	GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-	GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-	GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-	LL_GPIO_Init(GPIOB, &GPIO_InitStructure);
+	gpio_initstruct.Mode = LL_GPIO_MODE_ALTERNATE;
+	gpio_initstruct.Alternate = LL_GPIO_AF_2;
+	gpio_initstruct.Pin = LL_GPIO_PIN_7;
+	gpio_initstruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
+	gpio_initstruct.Pull = LL_GPIO_PULL_DOWN;
+	gpio_initstruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
+	LL_GPIO_Init(GPIOB, &gpio_initstruct);
 	
-	/*Initial Output state*/
-	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
-	LL_GPIO_ResetOutputPin(GPIOB, LL_GPIO_PIN_7);
 }
-
-//void TIMBase_Config(void)
-//{
-//	LL_TIM_InitTypeDef TIM_InitStructure;
-//	
-//	/* Enable the timer peripheral clock */
-//  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-//	/* Config time base that overflow every 1 ms*/
-//	TIM_InitStructure.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-//	TIM_InitStructure.CounterMode = LL_TIM_COUNTERMODE_UP;
-//	TIM_InitStructure.Prescaler = 3200; //Prescale TIM2 clock to 10kHz
-//	TIM_InitStructure.Autoreload = 10000-1; //Create counting value for 1 ms
-//	LL_TIM_Init(TIM2,&TIM_InitStructure);
-//	/*Config interrupt that trigger when 1 ms passed (ident by Update Event Flag (UEF))*/
-//	LL_TIM_EnableIT_UPDATE(TIM2);
-//  
-//  /* Configure the NVIC to handle TIM2 update interrupt */
-//  NVIC_SetPriority(TIM2_IRQn, 0);
-//  NVIC_EnableIRQ(TIM2_IRQn);
-//  
-//  /* Enable counter */
-//  LL_TIM_EnableCounter(TIM2);
-//  
-//  /* Force update generation */
-//  //LL_TIM_GenerateEvent_UPDATE(TIM2);
-//}
-
-void Button_Config(void)
+void TIMOC_Config()
 {
-	LL_EXTI_InitTypeDef EXTI_InitStructure;
-
-	/* Enable the BUTTON Clock */
-  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+	LL_TIM_InitTypeDef tim_initstruct;
+	LL_TIM_OC_InitTypeDef tim_oc_initstruct;
 	
-//  /* Configure GPIO for BUTTON */
-//	GPIO_InitStructure.Mode = LL_GPIO_MODE_INPUT;
-//	GPIO_InitStructure.Pin = LL_GPIO_PIN_0;
-//	GPIO_InitStructure.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-//	GPIO_InitStructure.Pull = LL_GPIO_PULL_NO;
-//	GPIO_InitStructure.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-//	LL_GPIO_Init(GPIOA, &GPIO_InitStructure);
-  
-  /* Connect External Line to the GPIO*/
-    /* Enale EXTI Config Access */
-	LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SYSCFG);
-	LL_SYSCFG_SetEXTISource(LL_SYSCFG_EXTI_PORTA, LL_SYSCFG_EXTI_LINE0);
-    
-  /* Enable a rising trigger EXTI line 13 Interrupt */
-  EXTI_InitStructure.Line_0_31 = LL_EXTI_LINE_0;
-	EXTI_InitStructure.Mode = LL_EXTI_MODE_IT;
-	EXTI_InitStructure.Trigger = LL_EXTI_TRIGGER_RISING;
-	EXTI_InitStructure.LineCommand = ENABLE;
-	LL_EXTI_Init(&EXTI_InitStructure);
-    
-  /* Configure NVIC for USER_BUTTON_EXTI_IRQn */
-  NVIC_EnableIRQ(EXTI0_IRQn); 
-  NVIC_SetPriority(EXTI0_IRQn,0x03);  
+	TIMOC_GPIO_Config();
+	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
+	/*Config time base for timer 4*/
+	tim_initstruct.Autoreload = E_NOTE;
+	tim_initstruct.Prescaler = 2;
+	tim_initstruct.CounterMode = LL_TIM_COUNTERMODE_UP;
+	tim_initstruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
+	LL_TIM_Init(TIM4, &tim_initstruct);
+	
+	NVIC_SetPriority(TIM4_IRQn, 1);
+	NVIC_EnableIRQ(TIM4_IRQn);
+	
+	tim_oc_initstruct.OCState = LL_TIM_OCSTATE_DISABLE;
+	tim_oc_initstruct.OCMode = LL_TIM_OCMODE_PWM1;
+	tim_oc_initstruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
+	tim_oc_initstruct.CompareValue = tim_initstruct.Autoreload/4;
+	LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH2, &tim_oc_initstruct);
+	
+	LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH2);
+	
+  LL_TIM_EnableCounter(TIM4);
+	
+  LL_TIM_EnableIT_CC2(TIM4);
+	
+	LL_TIM_OC_SetCompareCH1(TIM4, 0);
+	
+  LL_TIM_GenerateEvent_UPDATE(TIM4);
 }
+
+void Button_Config()
+{
+	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
+	LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_0, LL_GPIO_MODE_INPUT);
+}
+
+void DutyCycle_Adjust(uint32_t d)
+{
+	LL_TIM_SetAutoReload(TIM4, d);
+	LL_TIM_OC_SetCompareCH2(TIM4, LL_TIM_GetAutoReload(TIM4)/2);
+}
+/*Not use*/
+
+	uint8_t idx = 0;
+int main(void)
+{
+
+  SystemClock_Config();
+	TIMOC_Config();
+	/*Config time base that beat 60 BPM (Beat per Mins)*/
+	TIMBase_Config(210);
+	LED_Config();
+	CreateSong();
+  while (1)
+	{
+		if(LL_TIM_IsActiveFlag_UPDATE(TIM2) == 1)
+		{
+			LL_TIM_ClearFlag_UPDATE(TIM2);
+			idx_conductor++;
+			if(idx_conductor >= rythm[idx])
+			{
+				idx_conductor = 0;
+				DutyCycle_Adjust(song[idx]);
+				++idx;
+			}
+		}
+	}
+}
+
+void TIM4_IRQHandler(void)
+{
+  /* Check whether CC1 interrupt is pending */
+  if(LL_TIM_IsActiveFlag_CC2(TIM4) == 1)
+  {
+    /* Clear the update interrupt flag*/
+    LL_TIM_ClearFlag_CC2(TIM4);
+  }
+}
+
 
 /* ==============   BOARD SPECIFIC CONFIGURATION CODE BEGIN    ============== */
 /**
@@ -240,6 +229,7 @@ void SystemClock_Config(void)
     };
   }
   
+	
   /* Main PLL configuration and activation */
   LL_RCC_PLL_ConfigDomain_SYS(LL_RCC_PLLSOURCE_HSI, LL_RCC_PLL_MUL_6, LL_RCC_PLL_DIV_3);
 
@@ -266,50 +256,6 @@ void SystemClock_Config(void)
   
   /* Update CMSIS variable (which can be updated also through SystemCoreClockUpdate function) */
   LL_SetSystemCoreClock(32000000);
-}
-
-
-//void TIM3_IRQHandler(void)
-//{
-//  /* Check whether CC1 interrupt is pending */
-//  if(LL_TIM_IsActiveFlag_CC1(TIM3) == 1)
-//  {
-//    /* Clear the update interrupt flag*/
-//    LL_TIM_ClearFlag_CC1(TIM3);
-//		LL_TIM_SetCounter(TIM3, 0);
-//  }
-//}
-
-void EXTI0_IRQHandler(void)
-{
-	static uint8_t state = 0;
-	if(LL_EXTI_IsActiveFlag_0_31(LL_EXTI_LINE_0) != RESET)
-	{
-		LL_EXTI_ClearFlag_0_31(LL_EXTI_LINE_0);
-		
-		if(state == 0)
-		{
-			uwICValue1 = LL_TIM_IC_GetCaptureCH1(TIM2);
-			state = 1;
-		}
-		else
-		{
-			uwICValue2 = LL_TIM_IC_GetCaptureCH1(TIM2);
-			/*Pulse computation*/
-			if(uwICValue1 > uwICValue2)
-			{
-				uwDiffCap = uwICValue1 - uwICValue2;
-			}
-			else
-			{
-				uwDiffCap = ((LL_TIM_GetPrescaler(TIM2) - uwICValue1) + uwICValue2) + 1;
-			}
-			state = 0;
-		}
-
-		
-		
-	}
 }
 
 /* ==============   BOARD SPECIFIC CONFIGURATION CODE END      ============== */
