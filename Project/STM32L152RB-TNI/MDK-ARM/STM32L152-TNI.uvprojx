@@ -434,6 +434,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\..\Drivers\STM32L1xx_HAL_Driver\Src\stm32l1xx_ll_usart.c</FilePath>
             </File>
+            <File>
+              <FileName>stm32l1xx_ll_spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\..\Drivers\STM32L1xx_HAL_Driver\Src\stm32l1xx_ll_spi.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

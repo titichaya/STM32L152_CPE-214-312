@@ -10,181 +10,201 @@
 #include "stm32l1xx_ll_lcd.h"
 #include "stm32l1xx_ll_exti.h"
 #include "stm32l1xx_ll_usart.h"
-
+#include "stm32l1xx_ll_spi.h"
 #include "stm32l152_glass_lcd.h"
 #include "stdio.h"
 
-#define C_NOTE					15288.
-#define Db_NOTE					13550
-#define D_NOTE					13619
-#define Eb_NOTE					12855.
-#define E_NOTE					12134
-#define F_NOTE					11456
-#define Gb_NOTE					10809
-#define G_NOTE					10203
-#define Ab_NOTE					9630
-#define A_NOTE					9089
-#define Bb_NOTE					8579
-#define B_NOTE					8098
-#define C_HIGH_NOTE			7643
-#define MUTE_NOTE				0
+/* 24K640 Related Definition */
+#define DUMMY_BYTE							0xFF
 
-const uint32_t musicSheet[] = {E_NOTE, D_NOTE, C_NOTE, D_NOTE, E_NOTE, E_NOTE, E_NOTE, D_NOTE, D_NOTE, D_NOTE, D_NOTE, G_NOTE, G_NOTE,
-															 E_NOTE, D_NOTE, C_NOTE, D_NOTE, E_NOTE, E_NOTE, E_NOTE, D_NOTE, D_NOTE, D_NOTE, E_NOTE, D_NOTE, C_NOTE};
-const uint8_t tempo[] = {1,1,1,1,1,1,2,1,1,1,2,1,4,1,1,1,1,1,1,2,1,1,1,1,4};
-uint8_t idx_conductor = 0;
+#define WRITE_BYTE_CMD					0x02
+#define READ_BYTE_CMD						0x03
+#define WRITE_STATUS_CMD				0x01
+#define READ_STATUS_CMD					0x05
 
-uint32_t song[sizeof(musicSheet)/sizeof(uint32_t) * 2];
-uint8_t  rythm[sizeof(tempo)/sizeof(uint8_t) * 2]; 
+/* SPI Deifinition */
+#define SPIx										SPI1
+#define SPIx_CLK_ENABLE()				LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_SPI1);
 
+#define	SPI_MOSI_PIN						LL_GPIO_PIN_5
+#define	SPI_MOSI_PORT						GPIOB
+#define SPI_MOSI_AF_CONFIG() 		LL_GPIO_SetAFPin_0_7(SPI_MOSI_PORT, SPI_MOSI_PIN, LL_GPIO_AF_5);
+
+#define	SPI_MISO_PIN						LL_GPIO_PIN_4
+#define	SPI_MISO_PORT						GPIOB
+#define SPI_MISO_AF_CONFIG()		LL_GPIO_SetAFPin_0_7(SPI_MISO_PORT, SPI_MISO_PIN, LL_GPIO_AF_5);
+
+#define	SPI_SCLK_PIN						LL_GPIO_PIN_3
+#define	SPI_SCLK_PORT						GPIOB
+#define SPI_SLCK_AF_CONFIG()		LL_GPIO_SetAFPin_0_7(SPI_SCLK_PORT, SPI_SCLK_PIN, LL_GPIO_AF_5);
+
+#define SPI_CS_PIN							LL_GPIO_PIN_15
+#define SPI_CS_PORT							GPIOB
+
+#define SPI_START_COMM()				LL_GPIO_ResetOutputPin(SPI_CS_PORT, SPI_CS_PIN)
+#define SPI_END_COMM()					LL_GPIO_SetOutputPin(SPI_CS_PORT, SPI_CS_PIN)
+
+/* Private function */
 void SystemClock_Config(void);
+void SPI_GPIO_Config(void);
+void SPI_Config(void);
+void SPI_SendByte(uint8_t);
+uint8_t SPI_RecvByte(void);
+void SRAM_MemWriteByte(uint16_t addr, uint8_t data);
+uint8_t SRAM_MemReadByte(uint16_t addr);
+uint8_t SRAM_ReadStatus(void);
 
+/* Private Variable */
+uint8_t cmd_seq[4];
+uint8_t data;
+
+
+
+int main(void)
+{
+  SystemClock_Config();
+	SPI_Config();
 	
-void CreateSong()
+	SRAM_MemWriteByte(0xF0F0, 0x45);
+	data = SRAM_MemReadByte(0xF0F0);
+	
+  while (1);
+}
+
+
+void SPI_GPIO_Config(void)
+{
+  LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+
+  /* Configure SCK Pin connected to pin 31 of CN10 connector */
+  LL_GPIO_SetPinMode(SPI_SCLK_PORT, SPI_SCLK_PIN, LL_GPIO_MODE_ALTERNATE);
+  SPI_SLCK_AF_CONFIG();
+  LL_GPIO_SetPinSpeed(SPI_SCLK_PORT, SPI_SCLK_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+  LL_GPIO_SetPinPull(SPI_SCLK_PORT, SPI_SCLK_PIN, LL_GPIO_PULL_DOWN);
+
+  /* Configure MISO Pin connected to pin 27 of CN10 connector */
+  LL_GPIO_SetPinMode(SPI_MISO_PORT, SPI_MISO_PIN, LL_GPIO_MODE_ALTERNATE);
+  SPI_MISO_AF_CONFIG();
+  LL_GPIO_SetPinSpeed(SPI_MISO_PORT, SPI_MISO_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+  LL_GPIO_SetPinPull(SPI_MISO_PORT, SPI_MISO_PIN, LL_GPIO_PULL_DOWN);
+
+  /* Configure MOSI Pin connected to pin 29 of CN10 connector */
+  LL_GPIO_SetPinMode(SPI_MOSI_PORT, SPI_MOSI_PIN, LL_GPIO_MODE_ALTERNATE);
+	SPI_MOSI_AF_CONFIG();
+  LL_GPIO_SetPinSpeed(SPI_MOSI_PORT, SPI_MOSI_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+  LL_GPIO_SetPinPull(SPI_MOSI_PORT, SPI_MOSI_PIN, LL_GPIO_PULL_DOWN);
+	
+	  /* Configure CS Pin  */
+  LL_GPIO_SetPinMode(SPI_CS_PORT, SPI_CS_PIN, LL_GPIO_MODE_OUTPUT);
+  LL_GPIO_SetPinSpeed(SPI_CS_PORT, SPI_CS_PIN, LL_GPIO_SPEED_FREQ_HIGH);
+  LL_GPIO_SetPinPull(SPI_CS_PORT, SPI_CS_PIN, LL_GPIO_PULL_NO);
+	
+	LL_GPIO_SetOutputPin(SPI_CS_PORT, SPI_CS_PIN);
+}
+
+void SPI_Config(void)
+{
+
+  SPI_GPIO_Config();
+  /* (3) Configure SPI functional parameters ********************************/
+  SPIx_CLK_ENABLE();
+
+  /* Configure SPI communication */
+  LL_SPI_SetBaudRatePrescaler(SPIx, LL_SPI_BAUDRATEPRESCALER_DIV256);
+  LL_SPI_SetTransferDirection(SPIx,LL_SPI_FULL_DUPLEX);
+  LL_SPI_SetClockPhase(SPIx, LL_SPI_PHASE_1EDGE);
+  LL_SPI_SetClockPolarity(SPIx, LL_SPI_POLARITY_LOW);
+  /* Reset value is LL_SPI_MSB_FIRST */
+  LL_SPI_SetTransferBitOrder(SPIx, LL_SPI_MSB_FIRST);
+  LL_SPI_SetDataWidth(SPIx, LL_SPI_DATAWIDTH_8BIT);
+  LL_SPI_SetNSSMode(SPIx, LL_SPI_NSS_SOFT);
+  LL_SPI_SetMode(SPIx, LL_SPI_MODE_MASTER);
+	
+	LL_SPI_Enable(SPIx);
+}
+
+void SPI_SendByte(uint8_t data)
+{
+	while(LL_SPI_IsActiveFlag_TXE(SPIx) == RESET);
+	LL_SPI_TransmitData8(SPIx, data);
+}
+
+uint8_t SPI_RecvByte()
+{
+	uint8_t temp;
+	/* Wait for RX buffer empty flag */
+	while(LL_SPI_IsActiveFlag_RXNE(SPIx) == RESET);
+	temp = LL_SPI_ReceiveData8(SPIx);
+	return temp;
+}
+
+void SRAM_MemWriteByte(uint16_t addr, uint8_t data)
 {
 	uint8_t i;
 	
-	for(i = 0; i < sizeof(song)/sizeof(uint32_t); ++i)
+	cmd_seq[0] = WRITE_BYTE_CMD;
+	cmd_seq[1] = (addr>>8);
+	cmd_seq[2] = (addr&0xFF);
+	cmd_seq[3] = data;
+
+	
+	/* PULL CS LOW */
+	SPI_START_COMM();
+
+	/* START SENDING SEQ */
+	for(i = 0l; i < 4; ++i)
 	{
-		song[i] = musicSheet[i];
-		rythm[i] = tempo[i] * 4;
-		song[i + 1] = MUTE_NOTE;
-		rythm[i + 1] = 1;
+		SPI_SendByte(cmd_seq[i]);
+		SPI_RecvByte();
 	}
-}	
-uint32_t ARR_TempoCal(uint8_t beat)
-{
-	/*return arr value according to desire tempo (beat per min or BPM thus 60/beat = BPS or beat per sec)*/
-	return (SystemCoreClock/(32000*(beat/60)));
-}
-void TIMBase_Config(uint8_t tempo)
-{
-	LL_TIM_InitTypeDef tim_initstruct;
 	
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-	
-	tim_initstruct.Autoreload = ARR_TempoCal(tempo);
-	tim_initstruct.Prescaler = 32000;
-	tim_initstruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-	tim_initstruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-	LL_TIM_Init(TIM2, &tim_initstruct);
-	
-//	LL_TIM_EnableIT_UPDATE(TIM2);
-//	
-//	NVIC_SetPriority(TIM2_IRQn, 0);
-//	NVIC_EnableIRQ(TIM2_IRQn);
-//  /* Enable counter */
-  LL_TIM_EnableCounter(TIM2);
-//  
-//  /* Force update generation */
-//  LL_TIM_GenerateEvent_UPDATE(TIM2);
+	/* PUT CS HIGH */
+	SPI_END_COMM();
 }
 
-void LED_Config(void)
+uint8_t SRAM_MemReadByte(uint16_t addr)
 {
-	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
-	LL_GPIO_SetPinMode(GPIOB, LL_GPIO_PIN_6, LL_GPIO_MODE_OUTPUT);
-	LL_GPIO_SetPinOutputType(GPIOB, LL_GPIO_PIN_6, LL_GPIO_OUTPUT_PUSHPULL);
-	LL_GPIO_SetPinPull(GPIOB, LL_GPIO_PIN_6, LL_GPIO_PULL_NO);
+	uint8_t i;
+	uint8_t tmp;
 	
-	LL_GPIO_SetOutputPin(GPIOB, LL_GPIO_PIN_6);
-}
-
-void TIMOC_GPIO_Config()
-{
-	LL_GPIO_InitTypeDef gpio_initstruct;
-	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
+	cmd_seq[0] = READ_BYTE_CMD;
+	cmd_seq[1] = (addr>>8);
+	cmd_seq[2] = (addr&0xFF);
+	cmd_seq[3] = DUMMY_BYTE;
 	
-	gpio_initstruct.Mode = LL_GPIO_MODE_ALTERNATE;
-	gpio_initstruct.Alternate = LL_GPIO_AF_2;
-	gpio_initstruct.Pin = LL_GPIO_PIN_7;
-	gpio_initstruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-	gpio_initstruct.Pull = LL_GPIO_PULL_DOWN;
-	gpio_initstruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-	LL_GPIO_Init(GPIOB, &gpio_initstruct);
+	/* PULL CS LOW */
+	SPI_START_COMM();
 	
-}
-void TIMOC_Config()
-{
-	LL_TIM_InitTypeDef tim_initstruct;
-	LL_TIM_OC_InitTypeDef tim_oc_initstruct;
-	
-	TIMOC_GPIO_Config();
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
-	/*Config time base for timer 4*/
-	tim_initstruct.Autoreload = E_NOTE;
-	tim_initstruct.Prescaler = 2;
-	tim_initstruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-	tim_initstruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-	LL_TIM_Init(TIM4, &tim_initstruct);
-	
-	NVIC_SetPriority(TIM4_IRQn, 1);
-	NVIC_EnableIRQ(TIM4_IRQn);
-	
-	tim_oc_initstruct.OCState = LL_TIM_OCSTATE_DISABLE;
-	tim_oc_initstruct.OCMode = LL_TIM_OCMODE_PWM1;
-	tim_oc_initstruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
-	tim_oc_initstruct.CompareValue = tim_initstruct.Autoreload/4;
-	LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH2, &tim_oc_initstruct);
-	
-	LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH2);
-	
-  LL_TIM_EnableCounter(TIM4);
-	
-  LL_TIM_EnableIT_CC2(TIM4);
-	
-	LL_TIM_OC_SetCompareCH1(TIM4, 0);
-	
-  LL_TIM_GenerateEvent_UPDATE(TIM4);
-}
-
-void Button_Config()
-{
-	LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-	LL_GPIO_SetPinMode(GPIOA, LL_GPIO_PIN_0, LL_GPIO_MODE_INPUT);
-}
-
-void DutyCycle_Adjust(uint32_t d)
-{
-	LL_TIM_SetAutoReload(TIM4, d);
-	LL_TIM_OC_SetCompareCH2(TIM4, LL_TIM_GetAutoReload(TIM4)/2);
-}
-/*Not use*/
-
-	uint8_t idx = 0;
-int main(void)
-{
-
-  SystemClock_Config();
-	TIMOC_Config();
-	/*Config time base that beat 60 BPM (Beat per Mins)*/
-	TIMBase_Config(210);
-	LED_Config();
-	CreateSong();
-  while (1)
+	for(i = 0; i < 4; ++i)
 	{
-		if(LL_TIM_IsActiveFlag_UPDATE(TIM2) == 1)
-		{
-			LL_TIM_ClearFlag_UPDATE(TIM2);
-			idx_conductor++;
-			if(idx_conductor >= rythm[idx])
-			{
-				idx_conductor = 0;
-				DutyCycle_Adjust(song[idx]);
-				++idx;
-			}
-		}
+		SPI_SendByte(cmd_seq[i]);
+		tmp = SPI_RecvByte();
 	}
+	
+	/* PUT CS HIGH */
+	SPI_END_COMM();
+	
+	return tmp;
+	
 }
 
-void TIM4_IRQHandler(void)
+uint8_t SRAM_ReadStatus(void)
 {
-  /* Check whether CC1 interrupt is pending */
-  if(LL_TIM_IsActiveFlag_CC2(TIM4) == 1)
-  {
-    /* Clear the update interrupt flag*/
-    LL_TIM_ClearFlag_CC2(TIM4);
-  }
+	uint8_t tmp;
+		/* PULL CS LOW */
+	SPI_START_COMM();
+	LL_mDelay(1);
+	
+	/* START SENDING SEQ */
+	SPI_SendByte(READ_STATUS_CMD);
+	SPI_RecvByte();
+	SPI_SendByte(DUMMY_BYTE);
+	tmp = SPI_RecvByte();
+	
+	/* PUT CS HIGH */
+	SPI_END_COMM();
+	return tmp;
+	
 }
 
 
@@ -197,6 +217,7 @@ void TIM4_IRQHandler(void)
   *            HCLK(Hz)                       = 32000000
   *            AHB Prescaler                  = 1
   *            APB1 Prescaler                 = 1
+
   *            APB2 Prescaler                 = 1
   *            HSI Frequency(Hz)              = 16000000
   *            PLLMUL                         = 6
